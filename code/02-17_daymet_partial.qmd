@@ -189,7 +189,7 @@ daymet_all <- field %>%
                                  .site = site
                                  )
                           
-                        
+              
                         ))
 
 daymet_all %>% (head)
