@@ -163,15 +163,23 @@ fe_month %>%
            site == "Altus, OK" &
            month_abb == "Jan") %>%
   summarise(tmax.c = mean(tmax.c),
-            prcp.mm = sum(prcp.mm)) %>%
+            prcp.mm = sum(prcp.mm)) #%>%
   
 ```
 
 Now, what if we wanted to have month as part of the column name instead?  
 
 ```{r fe_month_sum_wide}
-fe_month_sum_wide 
+fe_month_sum_wide <- fe_month_sum %>%
+  pivot_longer(mean_dayl.s:sum_prcp.mm)%>%
+  mutate(varname = paste0(name, "_",month_abb)) %>%
+  dplyr::select(-name, -month_abb) %>% #another way of excluding some column
+  pivot_wider(names_from = varname,
+              values_from = value
+              ) %>%
   # Rounding to one decimal point
+  mutate(across(c(3:75), ~round(., 1)))
+
 
 fe_month_sum_wide  
 ```
@@ -188,14 +196,48 @@ Let's make a ridge plot to visualize the distribution of one variable over month
 #install.packages("ggridges")
 library(ggridges)
 
-
+ggplot(data = fe_month_sum,
+       aes(x = mean_tmax.c,
+           y = month_abb,
+           fill = stat(x)
+           )
+       ) +
+  geom_density_ridges_gradient(scale = 2,
+                               rel_min_height = .01
+                               ) +
+  scale_fill_viridis_c(option = "C", alpha = .8) +
+  theme(legend.position = "none") +
+  labs(x = "Monthly-average maximum temp (C)",
+       y = "Month"
+       )
 ```
 
 Now let's do that for all variables.  
 ```{r}
-finalplots 
+finalplots <- fe_month_sum %>%
+  pivot_longer(mean_dayl.s:sum_prcp.mm) %>%
+  group_by(name) %>%
+  nest() %>%
+  mutate(plot = map2(data,
+                     name,
+                     ~ggplot(data = .x,
+       aes(x = value,
+           y = month_abb,
+           fill = stat(x)
+           )
+       ) +
+  geom_density_ridges_gradient(scale = 2,
+                               rel_min_height = .01
+                               ) +
+  scale_fill_viridis_c(option = "C", alpha = .8) +
+  theme(legend.position = "none") +
+  labs(x = .y,
+       y = "Month"
+       )
+                     ))
+
   
-  
+finalplots$plot
 ```
 
 ```{r}
